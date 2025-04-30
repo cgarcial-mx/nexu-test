@@ -43,6 +43,6 @@ router.put('/models/:id', carController.editModel);
  * @desc    Get all models
  * @access  Public
  */
-router.get('/models', carController.getAllModels);
+// router.get('/models', carController.getAllModels);
 
 export default router;

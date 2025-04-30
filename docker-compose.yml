@@ -9,6 +9,26 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/nexu_cars?schema=public
     volumes:
       - ./data:/usr/src/app/data
       - ./logs:/usr/src/app/logs
+      - ./prisma:/usr/src/app/prisma
+    depends_on:
+      - postgres
+    command: sh -c "npx prisma migrate deploy && npm start"
+
+  postgres:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=nexu_cars
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

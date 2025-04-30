@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define the car brand model
+model Brand {
+  id           Int     @id @default(autoincrement())
+  name         String  @unique
+  averagePrice Float   @default(0)
+  models       Model[] // Relation to car models
+
+  @@map("brands")
+}
+
+// Define the car model
+model Model {
+  id           Int    @id @default(autoincrement())
+  name         String
+  averagePrice Float
+  modelId      Int
+  brand        Brand  @relation(fields: [brandId], references: [id])
+  brandId      Int
+  brandName    String // Denormalized for easier querying
+
+  @@unique([name, brandId]) // Prevent duplicate model names within a brand
+  @@map("models")
+}

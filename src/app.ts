@@ -4,12 +4,10 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import fs from 'fs';
-import path from 'path';
 import { errorHandler, notFound } from './middleware/errorHandlers';
 import routes from './routes';
 import logger from './utils/logger';
-import { carService } from './services/carService';
+import { initializeDatabase } from './utils/dbInitializer';
 
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
@@ -21,13 +19,14 @@ app.use(morgan('combined')); // HTTP request logging
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
-// Loading json file
-try {
-  carService.loadCarsData();
-  logger.info('Car data loaded successfully');
-} catch (error) {
-  logger.error(`Failed to load car data: ${(error as Error).message}`);
-}
+// Initialize database with data from JSON file
+initializeDatabase()
+  .then(() => {
+    logger.info('Database initialized successfully');
+  })
+  .catch((error) => {
+    logger.error(`Failed to initialize database: ${(error as Error).message}`);
+  });
 
 // Routes
 app.use('/api', routes);

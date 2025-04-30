@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { carService } from '../services/carService';
+import { Car } from '../types/models';
 
 /**
  * Controller for car-related endpoints
@@ -8,45 +9,10 @@ export const carController = {
   /**
    * Get all brands
    */
-  getBrands: (req: Request, res: Response): void => {
+  getBrands: async (req: Request, res: Response): Promise<void> => {
     try {
-      const brands = carService.getBrands();
+      const brands = await carService.getBrands();
       res.json(brands);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  },
-
-  /**
-   * Get all cars
-   */
-  getAllCars: (req: Request, res: Response): void => {
-    try {
-      const cars = carService.getAllCars();
-      res.json(cars);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
-  },
-
-  /**
-   * Get car by ID
-   */
-  getCarById: (req: Request, res: Response): void => {
-    try {
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: 'Invalid ID format' });
-        return;
-      }
-
-      const car = carService.getCarById(id);
-      if (!car) {
-        res.status(404).json({ error: 'Car not found' });
-        return;
-      }
-
-      res.json(car);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
@@ -55,16 +21,103 @@ export const carController = {
   /**
    * Get cars by brand name
    */
-  getCarsByBrand: (req: Request, res: Response): void => {
+  getCarsByBrand: async (req: Request, res: Response): Promise<void> => {
     try {
-      const brandName = req.params.brand;
+      const brandName = req.params.brandName;
       if (!brandName) {
         res.status(400).json({ error: 'Brand name is required' });
         return;
       }
 
-      const cars = carService.getCarsByBrand(brandName);
+      const cars = await carService.getCarsByBrand(brandName);
       res.json(cars);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+
+  /**
+   * Create a new brand
+   */
+  createBrand: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { name } = req.body;
+
+      if (!name) {
+        res.status(400).json({ error: 'Brand name is required' });
+        return;
+      }
+
+      const newBrand = await carService.createBrand(name);
+      res.status(201).json(newBrand);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+
+  /**
+   * Create a new model for a specific brand
+   */
+  createModel: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const brandName = req.params.brandName;
+      const { name, averagePrice } = req.body;
+
+      if (!brandName) {
+        res.status(400).json({ error: 'Brand name is required' });
+        return;
+      }
+
+      if (!name) {
+        res.status(400).json({ error: 'Model name is required' });
+        return;
+      }
+
+      if (averagePrice === undefined || averagePrice === null) {
+        res.status(400).json({ error: 'Average price is required' });
+        return;
+      }
+
+      const newModel = await carService.createModel(
+        brandName,
+        name,
+        averagePrice,
+      );
+      res.status(201).json(newModel);
+    } catch (error) {
+      if ((error as Error).message.includes('Brand not found')) {
+        res.status(404).json({ error: (error as Error).message });
+      } else {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    }
+  },
+
+  /**
+   * Edit a model's price
+   */
+  editModel: async (req: Request, res: Response): Promise<void> => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      const { averagePrice } = req.body;
+
+      if (isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID format' });
+        return;
+      }
+
+      if (averagePrice === undefined || averagePrice === null) {
+        res.status(400).json({ error: 'Average price is required' });
+        return;
+      }
+
+      const updatedModel = await carService.editModelPrice(id, averagePrice);
+      if (!updatedModel) {
+        res.status(404).json({ error: 'Model not found' });
+        return;
+      }
+
+      res.json(updatedModel);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

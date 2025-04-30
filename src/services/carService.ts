@@ -1,93 +1,176 @@
-import fs from 'fs';
-import path from 'path';
+import prisma from '../lib/prisma';
 import { Car } from '../types/models';
 
 class CarService {
-  private carsData: Car[] = [];
-  private dataLoaded = false;
-
-  /**
-   * Load cars data from the JSON file
-   */
-  public loadCarsData(): void {
-    try {
-      const filePath = path.join(__dirname, '../../data/data.json');
-      console.log(`Loading data from: ${filePath}`);
-
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      this.carsData = JSON.parse(fileContent);
-      this.dataLoaded = true;
-
-      console.log(`Successfully loaded ${this.carsData.length} cars`);
-    } catch (error) {
-      console.error('Error loading cars data:', error);
-      throw new Error(`Failed to load cars data: ${(error as Error).message}`);
-    }
-  }
-
   /**
    * Get brands with average prices
-   * @returns Array of brand objects with id, nombre, and average_price
+   * @returns Array of brand objects with id, name, and averagePrice
    */
-  public getBrands(): { id: number; nombre: string; average_price: number }[] {
-    if (!this.dataLoaded) {
-      this.loadCarsData();
-    }
-
-    // Group cars by brand name
-    const brandMap: { [key: string]: Car[] } = {};
-
-    this.carsData.forEach((car) => {
-      const brand = car.brand_name;
-      if (!brandMap[brand]) {
-        brandMap[brand] = [];
-      }
-      brandMap[brand].push(car);
+  public async getBrands(): Promise<
+    { id: number; nombre: string; averagePrice: number }[]
+  > {
+    const brands = await prisma.brand.findMany({
+      orderBy: {
+        name: 'asc',
+      },
     });
 
-    // Calculate average price for each brand and format result
-    const brands = Object.keys(brandMap).map((brandName, index) => {
-      const brandCars = brandMap[brandName];
-      const totalPrice = brandCars.reduce(
-        (sum, car) => sum + car.average_price,
-        0,
-      );
-      const avgPrice =
-        brandCars.length > 0 ? Math.round(totalPrice / brandCars.length) : 0;
-
-      return {
-        id: index + 1,
-        nombre: brandName,
-        average_price: avgPrice,
-      };
-    });
-
-    // Sort by brand name
-    return brands.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    return brands.map((brand) => ({
+      id: brand.id,
+      nombre: brand.name,
+      averagePrice: brand.averagePrice,
+    }));
   }
 
   /**
    * Get cars by brand name
    * @returns Array of cars of a specific brand
    */
-  public getCarsByBrand(brandName: string): Car[] {
-    if (!this.dataLoaded) {
-      this.loadCarsData();
-    }
-    return this.carsData.filter(
-      (car) => car.brand_name.toLowerCase() === brandName.toLowerCase(),
-    );
+  public async getCarsByBrand(brandName: string): Promise<Car[]> {
+    const models = await prisma.model.findMany({
+      where: {
+        brandName: {
+          equals: brandName,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    return models.map((model) => ({
+      id: model.modelId,
+      name: model.name,
+      averagePrice: model.averagePrice,
+      brandName: model.brandName,
+    }));
   }
 
-  public createBrand(name: string): void {
-    if (!this.dataLoaded) {
-      this.loadCarsData();
+  /**
+   * Create a new brand
+   */
+  public async createBrand(
+    name: string,
+    averagePrice: number = 0,
+  ): Promise<{ id: number; name: string; averagePrice: number }> {
+    const brand = await prisma.brand.create({
+      data: {
+        name,
+        averagePrice,
+      },
+    });
+
+    // brandname is already used
+    if (!brand) {
+      throw new Error(`Brand "${name}" already exists`);
     }
-    this.carsData.push({
-      id: this.carsData.length + 1,
-      name,
-      average_price: 0,
-      brand_name: name,
+
+    return {
+      id: brand.id,
+      name: brand.name,
+      averagePrice: brand.averagePrice,
+    };
+  }
+
+  /**
+   * Create a new model for a specific brand
+   */
+  public async createModel(
+    brandName: string,
+    name: string,
+    averagePrice: number,
+  ): Promise<Car> {
+    // Find the brand
+    const brand = await prisma.brand.findFirst({
+      where: {
+        name: {
+          equals: brandName,
+          mode: 'insensitive',
+        },
+      },
+    });
+
+    if (!brand) {
+      throw new Error(`Brand "${brandName}" not found`);
+    }
+
+    // Create the model
+    const model = await prisma.model.create({
+      data: {
+        name,
+        averagePrice,
+        brandId: brand.id,
+        brandName: brand.name,
+      },
+    });
+
+    // Update the brand's average price
+    await this.updateBrandAveragePrice(brand.id);
+
+    return {
+      id: model.id,
+      name: model.name,
+      averagePrice: model.averagePrice,
+      brandName: model.brandName,
+    };
+  }
+
+  /**
+   * Edit a model's price
+   */
+  public async editModelPrice(
+    modelId: number,
+    newPrice: number,
+  ): Promise<Car | null> {
+    // Find the model first
+    const existingModel = await prisma.model.findUnique({
+      where: { modelId },
+    });
+
+    if (!existingModel) {
+      return null;
+    }
+
+    // Update the model
+    const model = await prisma.model.update({
+      where: { modelId },
+      data: {
+        averagePrice: newPrice,
+      },
+    });
+
+    // Update the brand's average price
+    await this.updateBrandAveragePrice(model.brandId);
+
+    return {
+      id: model.id,
+      name: model.name,
+      averagePrice: model.averagePrice,
+      brandName: model.brandName,
+    };
+  }
+
+  /**
+   * Update a brand's average price based on its models
+   */
+  private async updateBrandAveragePrice(brandId: number): Promise<void> {
+    // Get all models for the brand
+    const models = await prisma.model.findMany({
+      where: { brandId },
+    });
+
+    // Calculate new average price
+    const totalPrice = models.reduce(
+      (sum: number, model: { averagePrice: number }) =>
+        sum + model.averagePrice,
+      0,
+    );
+    const newAvgPrice = models.length > 0 ? totalPrice / models.length : 0;
+
+    // Update the brand
+    await prisma.brand.update({
+      where: { id: brandId },
+      data: {
+        averagePrice: newAvgPrice,
+      },
     });
   }
 }
