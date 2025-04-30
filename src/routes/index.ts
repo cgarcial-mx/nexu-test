@@ -1,13 +1,14 @@
 import express, { Router, Request, Response } from 'express';
+import carRoutes from './carRoutes';
 
 const router: Router = express.Router();
 
-// Example route
+// Welcome route
 router.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'API is working!' });
+  res.json({ message: 'Nexu Test' });
 });
 
-// Add more route modules here
-// router.use('/users', require('./users'));
+// Register routes
+router.use('/cars', carRoutes);
 
 export default router;

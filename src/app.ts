@@ -9,6 +9,7 @@ import path from 'path';
 import { errorHandler, notFound } from './middleware/errorHandlers';
 import routes from './routes';
 import logger from './utils/logger';
+import { carService } from './services/carService';
 
 const app: Application = express();
 const PORT: number = parseInt(process.env.PORT || '3000', 10);
@@ -19,6 +20,14 @@ app.use(cors()); // Enable CORS
 app.use(morgan('combined')); // HTTP request logging
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// Loading json file
+try {
+  carService.loadCarsData();
+  logger.info('Car data loaded successfully');
+} catch (error) {
+  logger.error(`Failed to load car data: ${(error as Error).message}`);
+}
 
 // Routes
 app.use('/api', routes);
@@ -31,6 +40,8 @@ app.use(errorHandler);
 if (require.main === module) {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
+    logger.info(`API is available at http://localhost:${PORT}/api`);
+    logger.info(`Cars API is available at http://localhost:${PORT}/api/cars`);
   });
 }
 
