@@ -23,13 +23,13 @@ export const carController = {
    */
   getCarsByBrand: async (req: Request, res: Response): Promise<void> => {
     try {
-      const brandName = req.params.brandName;
-      if (!brandName) {
-        res.status(400).json({ error: 'Brand name is required' });
+      const brandId = req.params.brandId;
+      if (!brandId) {
+        res.status(400).json({ error: 'Brand ID is required' });
         return;
       }
 
-      const cars = await carService.getCarsByBrand(brandName);
+      const cars = await carService.getCarsByBrand(parseInt(brandId, 10));
       res.json(cars);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });

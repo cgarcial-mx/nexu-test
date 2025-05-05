@@ -40,7 +40,6 @@ if (require.main === module) {
   app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
     logger.info(`API is available at http://localhost:${PORT}/api`);
-    logger.info(`Cars API is available at http://localhost:${PORT}/api/cars`);
   });
 }
 

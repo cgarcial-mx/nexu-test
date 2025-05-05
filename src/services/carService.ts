@@ -26,12 +26,12 @@ class CarService {
    * Get cars by brand name
    * @returns Array of cars of a specific brand
    */
-  public async getCarsByBrand(brandName: string): Promise<Car[]> {
+  public async getCarsByBrand(brandId: number): Promise<Car[]> {
+    console.log(brandId);
     const models = await prisma.model.findMany({
       where: {
-        brandName: {
-          equals: brandName,
-          mode: 'insensitive',
+        brandId: {
+          equals: brandId,
         },
       },
     });
@@ -74,22 +74,21 @@ class CarService {
    * Create a new model for a specific brand
    */
   public async createModel(
-    brandName: string,
+    brandId: number,
     name: string,
     averagePrice: number,
   ): Promise<Car> {
     // Find the brand
     const brand = await prisma.brand.findFirst({
       where: {
-        name: {
-          equals: brandName,
-          mode: 'insensitive',
+        brandId: {
+          equals: brandId,
         },
       },
     });
 
     if (!brand) {
-      throw new Error(`Brand "${brandName}" not found`);
+      throw new Error(`Brand "${brandId}" not found`);
     }
 
     // Create the model
@@ -99,6 +98,7 @@ class CarService {
         averagePrice,
         brandId: brand.id,
         brandName: brand.name,
+        modelId: 0,
       },
     });
 
@@ -121,7 +121,7 @@ class CarService {
     newPrice: number,
   ): Promise<Car | null> {
     // Find the model first
-    const existingModel = await prisma.model.findUnique({
+    const existingModel = await prisma.model.findFirst({
       where: { modelId },
     });
 
@@ -131,7 +131,7 @@ class CarService {
 
     // Update the model
     const model = await prisma.model.update({
-      where: { modelId },
+      where: { id: existingModel.id },
       data: {
         averagePrice: newPrice,
       },

@@ -1,5 +1,8 @@
 FROM node:18-alpine
 
+# Install OpenSSL libraries required by Prisma
+RUN apk add --no-cache openssl openssl-dev libc6-compat
+
 # Create app directory
 WORKDIR /usr/src/app
 

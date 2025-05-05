@@ -11,11 +11,11 @@ const router: Router = express.Router();
 router.get('/brands', carController.getBrands);
 
 /**
- * @route   GET /api/brands/:brandName/models
+ * @route   GET /api/brands/:brandId/models
  * @desc    Get cars by brand name
  * @access  Public
  */
-router.get('/brands/:brandName/models', carController.getCarsByBrand);
+router.get('/brands/:brandId/models', carController.getCarsByBrand);
 
 /**
  * @route   POST /api/brands
@@ -25,11 +25,11 @@ router.get('/brands/:brandName/models', carController.getCarsByBrand);
 router.post('/brands', carController.createBrand);
 
 /**
- * @route   POST /api/brands/:brandName/models
+ * @route   POST /api/brands/:brandId/models
  * @desc    Create new model in specific brand
  * @access  Public
  */
-router.post('/brands/:brandName/models', carController.createModel);
+router.post('/brands/:brandId/models', carController.createModel);
 
 /**
  * @route   PUT /api/models/:id

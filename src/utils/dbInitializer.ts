@@ -47,20 +47,44 @@ export async function initializeDatabase(): Promise<void> {
         },
       });
 
-      // Create models for this brand
-      const modelPromises = cars.map((car) =>
-        prisma.model.create({
-          data: {
-            name: car.name,
-            averagePrice: car.average_price,
-            modelId: car.id,
-            brandId: brand.id,
-            brandName: brandName,
-          },
-        }),
-      );
+      // Create models for this brand - handling duplicates
+      for (const car of cars) {
+        try {
+          // Check if model already exists
+          const existingModel = await prisma.model.findFirst({
+            where: {
+              name: car.name,
+              brandId: brand.id
+            }
+          });
 
-      await Promise.all(modelPromises);
+          if (existingModel) {
+            // Update existing model
+            await prisma.model.update({
+              where: { id: existingModel.id },
+              data: {
+                averagePrice: car.average_price,
+                modelId: car.id
+              }
+            });
+            logger.info(`Updated existing model: ${car.name} (${brandName})`);
+          } else {
+            // Create new model
+            await prisma.model.create({
+              data: {
+                name: car.name,
+                averagePrice: car.average_price,
+                modelId: car.id,
+                brandId: brand.id,
+                brandName: brandName,
+              },
+            });
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.warn(`Error processing model ${car.name} (${brandName}): ${errorMessage}`);
+        }
+      }
     }
 
     logger.info(`Database initialized with ${carsData.length} car models`);
