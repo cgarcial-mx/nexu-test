@@ -117,3 +117,16 @@ docker-compose up -d
 ├── tsconfig.json        # TypeScript configuration
 └── package.json         # Project dependencies
 ```
+
+
+
+## Que faltó agregar o recomendaria agregar
+
+1. Autenticación con JWT, es necesario siempre tener los endpoints protegidos
+2. En caso de que fueran publicos entonces seleccionaria una buena herramienta para gestionar los requests del api y protegerlo contra ataques ciberneticos
+3. Podria mejorar el control de errores, los errores por defecto funcionan bien, pero siempre hay manera de mejorarlos
+4. Seguramente se pueden optimizar los requests, esto fue planeado muy rapido en vias de funcionar
+5. Al inicio habia planeado todo gestionarlo en memoria para resolver la prueba mas rapidamente, pero luego leyendo bien el readme me percaté que si era necesario levantar una DB, utlicé PostgreSQL con prisma porque tienden a ser dos herramientas faciles de configurar, prisma tiene la suficiente documentacion para que sea facil de aprender y usar, además que es capaz de soportar bastante complejidad
+6. Analizaria si es necesario agregar ordenamiento y paginacion, en algun punto la lista puede crecer demasiado y se puede volver lento de manejar.
+7. Mas documentación en el código
+8. NO logré terminar todos los tests, tambien le pondría tiempo a eso

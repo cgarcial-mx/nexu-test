@@ -1,56 +1,44 @@
 import request from 'supertest';
 import app from '../src/app';
-import { Car } from '../src/types/models';
 
-describe('Car API Endpoints', () => {
-  // Test getting all cars
-  it('should get all cars', async () => {
-    const res = await request(app).get('/api/cars');
-    expect(res.statusCode).toEqual(200);
+describe('Tests to run i cars api', () => {
+  let brandId = 1;
+
+  it('should create a new brand', async () => {
+    const res = await request(app)
+      .post('/api/brands')
+      .send({ name: 'TestBrand' });
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('id');
+    expect(res.body).toHaveProperty('name', 'TestBrand');
+  });
+
+  it('should get all brands', async () => {
+    const res = await request(app).get('/api/brands');
+    expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBeTruthy();
-    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.some((b: any) => b.id === brandId)).toBeTruthy();
   });
 
-  // Test getting car by ID
-  it('should get a car by ID', async () => {
-    const id = 1; // Assuming this ID exists in your data
-    const res = await request(app).get(`/api/cars/${id}`);
-    expect(res.statusCode).toEqual(200);
-    expect(res.body).toHaveProperty('id', id);
-    expect(res.body).toHaveProperty('name');
-    expect(res.body).toHaveProperty('brand_name');
+  it('should create a new model for the brand', async () => {
+    const res = await request(app)
+      .post(`/api/brands/${brandId}/models`)
+      .send({ name: 'TestModel', averagePrice: 12345 });
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('id');
+    expect(res.body).toHaveProperty('name', 'TestModel');
+    expect(res.body).toHaveProperty('averagePrice', 12345);
   });
 
-  // Test getting car by non-existent ID
-  it('should return 404 for non-existent car ID', async () => {
-    const res = await request(app).get('/api/cars/9999');
-    expect(res.statusCode).toEqual(404);
-    expect(res.body).toHaveProperty('error');
-  });
-
-  // Test getting cars by brand
-  it('should get cars by brand name', async () => {
-    const brand = 'Audi'; // Assuming this brand exists in your data
-    const res = await request(app).get(`/api/cars/brand/${brand}`);
-    expect(res.statusCode).toEqual(200);
+  it('should get all models', async () => {
+    const res = await request(app).get('/api/models');
+    expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBeTruthy();
-    
-    // Check that all returned cars have the specified brand
-    res.body.forEach((car: Car) => {
-      expect(car.brand_name).toEqual(brand);
-    });
   });
 
-  // Test searching cars
-  it('should search cars by name', async () => {
-    const searchTerm = 'A'; // This should match some cars
-    const res = await request(app).get(`/api/cars/search?name=${searchTerm}`);
-    expect(res.statusCode).toEqual(200);
+  it('should filter models by price range', async () => {
+    const res = await request(app).get('/api/models?greater=10000&lower=13000');
+    expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body)).toBeTruthy();
-    
-    // Check that all returned cars have the search term in their name
-    res.body.forEach((car: Car) => {
-      expect(car.name.toLowerCase()).toContain(searchTerm.toLowerCase());
-    });
   });
 });
