@@ -40,9 +40,9 @@ router.put('/models/:id', carController.editModel);
 
 /**
  * @route   GET /api/models
- * @desc    Get all models
+ * @desc    Get all models with optional price range filtering
  * @access  Public
  */
-// router.get('/models', carController.getAllModels);
+router.get('/models', carController.getAllModels);
 
 export default router;

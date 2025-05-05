@@ -81,7 +81,7 @@ class CarService {
     // Find the brand
     const brand = await prisma.brand.findFirst({
       where: {
-        brandId: {
+        id: {
           equals: brandId,
         },
       },
@@ -146,6 +146,43 @@ class CarService {
       averagePrice: model.averagePrice,
       brandName: model.brandName,
     };
+  }
+
+  /**
+   * Get all models with optional price range filtering
+   * @param greater Optional minimum price filter
+   * @param lower Optional maximum price filter
+   * @returns Array of car models that match the price criteria
+   */
+  public async getModelsWithPriceFilter(
+    greater?: number,
+    lower?: number,
+  ): Promise<Car[]> {
+    const whereCondition: any = {};
+
+    // Add price filters if provided
+    if (greater !== undefined || lower !== undefined) {
+      whereCondition.averagePrice = {};
+
+      if (greater !== undefined) {
+        whereCondition.averagePrice.gte = greater;
+      }
+
+      if (lower !== undefined) {
+        whereCondition.averagePrice.lte = lower;
+      }
+    }
+
+    const models = await prisma.model.findMany({
+      where: whereCondition,
+    });
+
+    return models.map((model) => ({
+      id: model.id,
+      name: model.name,
+      averagePrice: model.averagePrice,
+      brandName: model.brandName,
+    }));
   }
 
   /**

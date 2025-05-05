@@ -60,11 +60,11 @@ export const carController = {
    */
   createModel: async (req: Request, res: Response): Promise<void> => {
     try {
-      const brandName = req.params.brandName;
+      const brandId = req.params.brandId;
       const { name, averagePrice } = req.body;
 
-      if (!brandName) {
-        res.status(400).json({ error: 'Brand name is required' });
+      if (!brandId) {
+        res.status(400).json({ error: 'Brand ID is required' });
         return;
       }
 
@@ -79,7 +79,7 @@ export const carController = {
       }
 
       const newModel = await carService.createModel(
-        brandName,
+        parseInt(brandId, 10),
         name,
         averagePrice,
       );
@@ -118,6 +118,29 @@ export const carController = {
       }
 
       res.json(updatedModel);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  },
+
+  /**
+   * Get all models with optional price filtering
+   */
+  getAllModels: async (req: Request, res: Response): Promise<void> => {
+    try {
+      // Parse price range query parameters
+      const greater = req.query.greater ? parseFloat(req.query.greater as string) : undefined;
+      const lower = req.query.lower ? parseFloat(req.query.lower as string) : undefined;
+      
+      // Validate that price parameters are valid numbers if provided
+      if ((req.query.greater && isNaN(greater as number)) || 
+          (req.query.lower && isNaN(lower as number))) {
+        res.status(400).json({ error: 'Price filters must be valid numbers' });
+        return;
+      }
+      
+      const models = await carService.getModelsWithPriceFilter(greater, lower);
+      res.json(models);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
